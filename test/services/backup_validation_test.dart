@@ -35,11 +35,7 @@ void main() {
       },
     ],
     'deliveryPlans': [
-      {
-        'id': 'dp-1',
-        'name': 'Monday',
-        'createdAt': '2025-01-01T00:00:00.000',
-      },
+      {'id': 'dp-1', 'name': 'Monday', 'createdAt': '2025-01-01T00:00:00.000'},
     ],
     'deliveryPlanItems': [
       {
@@ -64,22 +60,26 @@ void main() {
     test('rejects invalid JSON', () {
       expect(
         () => BackupService.validate('not json at all'),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          'File is not valid JSON.',
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            'File is not valid JSON.',
+          ),
+        ),
       );
     });
 
     test('rejects non-object JSON', () {
       expect(
         () => BackupService.validate(jsonEncode([1, 2, 3])),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          'Expected a JSON object at root.',
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            'Expected a JSON object at root.',
+          ),
+        ),
       );
     });
 
@@ -87,11 +87,13 @@ void main() {
       final data = validBackup()..['backupVersion'] = 99;
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Unsupported backup version'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Unsupported backup version'),
+          ),
+        ),
       );
     });
 
@@ -107,11 +109,13 @@ void main() {
       final data = validBackup()..remove('orders');
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('"orders"'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('"orders"'),
+          ),
+        ),
       );
     });
   });
@@ -122,11 +126,13 @@ void main() {
       (data['customers'] as List).add({'name': 'No ID'});
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Customer missing required "id"'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Customer missing required "id"'),
+          ),
+        ),
       );
     });
 
@@ -135,11 +141,13 @@ void main() {
       (data['customers'] as List).add({'id': 'cust-2'});
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Customer missing required "name"'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Customer missing required "name"'),
+          ),
+        ),
       );
     });
 
@@ -148,11 +156,13 @@ void main() {
       (data['products'] as List).add({'label': 'No ID'});
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Product missing required "id"'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Product missing required "id"'),
+          ),
+        ),
       );
     });
 
@@ -161,11 +171,13 @@ void main() {
       (data['products'] as List).add({'id': 'prod-2'});
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Product missing required "label"'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Product missing required "label"'),
+          ),
+        ),
       );
     });
   });
@@ -180,11 +192,13 @@ void main() {
       });
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Order references unknown customer'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Order references unknown customer'),
+          ),
+        ),
       );
     });
 
@@ -198,11 +212,13 @@ void main() {
       });
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Order line item references unknown order'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Order line item references unknown order'),
+          ),
+        ),
       );
     });
 
@@ -216,11 +232,13 @@ void main() {
       });
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Order line item references unknown product'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Order line item references unknown product'),
+          ),
+        ),
       );
     });
 
@@ -233,11 +251,13 @@ void main() {
       });
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Delivery plan item references unknown plan'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Delivery plan item references unknown plan'),
+          ),
+        ),
       );
     });
 
@@ -250,11 +270,13 @@ void main() {
       });
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Delivery plan item references unknown order'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Delivery plan item references unknown order'),
+          ),
+        ),
       );
     });
 
@@ -267,11 +289,13 @@ void main() {
       });
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Customer product price references unknown customer'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Customer product price references unknown customer'),
+          ),
+        ),
       );
     });
 
@@ -284,11 +308,13 @@ void main() {
       });
       expect(
         () => BackupService.validate(jsonEncode(data)),
-        throwsA(isA<BackupValidationError>().having(
-          (e) => e.message,
-          'message',
-          contains('Customer product price references unknown product'),
-        )),
+        throwsA(
+          isA<BackupValidationError>().having(
+            (e) => e.message,
+            'message',
+            contains('Customer product price references unknown product'),
+          ),
+        ),
       );
     });
   });
