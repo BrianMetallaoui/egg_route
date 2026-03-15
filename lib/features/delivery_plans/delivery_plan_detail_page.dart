@@ -45,7 +45,7 @@ class _DeliveryPlanDetailPageState
   List<_LocalPlanItem> _localItems = [];
   bool _initialized = false;
 
-  _TriFilter _deliveredFilter = _TriFilter.all;
+  _TriFilter _deliveredFilter = _TriFilter.no;
   _TriFilter _paidFilter = _TriFilter.all;
 
   @override
@@ -443,6 +443,7 @@ class _DeliveryPlanDetailPageState
                             dense: true,
                           ),
 
+                          const SizedBox(height: AppConstants.paddingSmall),
                           // Bulk action buttons
                           Row(
                             children: [
@@ -478,7 +479,7 @@ class _DeliveryPlanDetailPageState
                           Row(
                             children: [
                               Text(
-                                'Orders (${allItems.length})',
+                                'Orders (${displayItems.length}/${allItems.length})',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
