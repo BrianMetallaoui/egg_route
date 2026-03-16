@@ -1165,6 +1165,18 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, OrderRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _paymentMethodMeta = const VerificationMeta(
+    'paymentMethod',
+  );
+  @override
+  late final GeneratedColumn<String> paymentMethod = GeneratedColumn<String>(
+    'payment_method',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1175,6 +1187,7 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, OrderRow> {
     deliveredDate,
     paidDate,
     note,
+    paymentMethod,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1245,6 +1258,15 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, OrderRow> {
         note.isAcceptableOrUnknown(data['note']!, _noteMeta),
       );
     }
+    if (data.containsKey('payment_method')) {
+      context.handle(
+        _paymentMethodMeta,
+        paymentMethod.isAcceptableOrUnknown(
+          data['payment_method']!,
+          _paymentMethodMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1286,6 +1308,10 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, OrderRow> {
         DriftSqlType.string,
         data['${effectivePrefix}note'],
       )!,
+      paymentMethod: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payment_method'],
+      )!,
     );
   }
 
@@ -1304,6 +1330,7 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
   final DateTime? deliveredDate;
   final DateTime? paidDate;
   final String note;
+  final String paymentMethod;
   const OrderRow({
     required this.id,
     required this.customerId,
@@ -1313,6 +1340,7 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
     this.deliveredDate,
     this.paidDate,
     required this.note,
+    required this.paymentMethod,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1329,6 +1357,7 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
       map['paid_date'] = Variable<DateTime>(paidDate);
     }
     map['note'] = Variable<String>(note);
+    map['payment_method'] = Variable<String>(paymentMethod);
     return map;
   }
 
@@ -1346,6 +1375,7 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
           ? const Value.absent()
           : Value(paidDate),
       note: Value(note),
+      paymentMethod: Value(paymentMethod),
     );
   }
 
@@ -1363,6 +1393,7 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
       deliveredDate: serializer.fromJson<DateTime?>(json['deliveredDate']),
       paidDate: serializer.fromJson<DateTime?>(json['paidDate']),
       note: serializer.fromJson<String>(json['note']),
+      paymentMethod: serializer.fromJson<String>(json['paymentMethod']),
     );
   }
   @override
@@ -1377,6 +1408,7 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
       'deliveredDate': serializer.toJson<DateTime?>(deliveredDate),
       'paidDate': serializer.toJson<DateTime?>(paidDate),
       'note': serializer.toJson<String>(note),
+      'paymentMethod': serializer.toJson<String>(paymentMethod),
     };
   }
 
@@ -1389,6 +1421,7 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
     Value<DateTime?> deliveredDate = const Value.absent(),
     Value<DateTime?> paidDate = const Value.absent(),
     String? note,
+    String? paymentMethod,
   }) => OrderRow(
     id: id ?? this.id,
     customerId: customerId ?? this.customerId,
@@ -1400,6 +1433,7 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
         : this.deliveredDate,
     paidDate: paidDate.present ? paidDate.value : this.paidDate,
     note: note ?? this.note,
+    paymentMethod: paymentMethod ?? this.paymentMethod,
   );
   OrderRow copyWithCompanion(OrdersCompanion data) {
     return OrderRow(
@@ -1417,6 +1451,9 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
           : this.deliveredDate,
       paidDate: data.paidDate.present ? data.paidDate.value : this.paidDate,
       note: data.note.present ? data.note.value : this.note,
+      paymentMethod: data.paymentMethod.present
+          ? data.paymentMethod.value
+          : this.paymentMethod,
     );
   }
 
@@ -1430,7 +1467,8 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
           ..write('orderDate: $orderDate, ')
           ..write('deliveredDate: $deliveredDate, ')
           ..write('paidDate: $paidDate, ')
-          ..write('note: $note')
+          ..write('note: $note, ')
+          ..write('paymentMethod: $paymentMethod')
           ..write(')'))
         .toString();
   }
@@ -1445,6 +1483,7 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
     deliveredDate,
     paidDate,
     note,
+    paymentMethod,
   );
   @override
   bool operator ==(Object other) =>
@@ -1457,7 +1496,8 @@ class OrderRow extends DataClass implements Insertable<OrderRow> {
           other.orderDate == this.orderDate &&
           other.deliveredDate == this.deliveredDate &&
           other.paidDate == this.paidDate &&
-          other.note == this.note);
+          other.note == this.note &&
+          other.paymentMethod == this.paymentMethod);
 }
 
 class OrdersCompanion extends UpdateCompanion<OrderRow> {
@@ -1469,6 +1509,7 @@ class OrdersCompanion extends UpdateCompanion<OrderRow> {
   final Value<DateTime?> deliveredDate;
   final Value<DateTime?> paidDate;
   final Value<String> note;
+  final Value<String> paymentMethod;
   final Value<int> rowid;
   const OrdersCompanion({
     this.id = const Value.absent(),
@@ -1479,6 +1520,7 @@ class OrdersCompanion extends UpdateCompanion<OrderRow> {
     this.deliveredDate = const Value.absent(),
     this.paidDate = const Value.absent(),
     this.note = const Value.absent(),
+    this.paymentMethod = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   OrdersCompanion.insert({
@@ -1490,6 +1532,7 @@ class OrdersCompanion extends UpdateCompanion<OrderRow> {
     this.deliveredDate = const Value.absent(),
     this.paidDate = const Value.absent(),
     this.note = const Value.absent(),
+    this.paymentMethod = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        customerId = Value(customerId),
@@ -1503,6 +1546,7 @@ class OrdersCompanion extends UpdateCompanion<OrderRow> {
     Expression<DateTime>? deliveredDate,
     Expression<DateTime>? paidDate,
     Expression<String>? note,
+    Expression<String>? paymentMethod,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1514,6 +1558,7 @@ class OrdersCompanion extends UpdateCompanion<OrderRow> {
       if (deliveredDate != null) 'delivered_date': deliveredDate,
       if (paidDate != null) 'paid_date': paidDate,
       if (note != null) 'note': note,
+      if (paymentMethod != null) 'payment_method': paymentMethod,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1527,6 +1572,7 @@ class OrdersCompanion extends UpdateCompanion<OrderRow> {
     Value<DateTime?>? deliveredDate,
     Value<DateTime?>? paidDate,
     Value<String>? note,
+    Value<String>? paymentMethod,
     Value<int>? rowid,
   }) {
     return OrdersCompanion(
@@ -1538,6 +1584,7 @@ class OrdersCompanion extends UpdateCompanion<OrderRow> {
       deliveredDate: deliveredDate ?? this.deliveredDate,
       paidDate: paidDate ?? this.paidDate,
       note: note ?? this.note,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1569,6 +1616,9 @@ class OrdersCompanion extends UpdateCompanion<OrderRow> {
     if (note.present) {
       map['note'] = Variable<String>(note.value);
     }
+    if (paymentMethod.present) {
+      map['payment_method'] = Variable<String>(paymentMethod.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1586,6 +1636,7 @@ class OrdersCompanion extends UpdateCompanion<OrderRow> {
           ..write('deliveredDate: $deliveredDate, ')
           ..write('paidDate: $paidDate, ')
           ..write('note: $note, ')
+          ..write('paymentMethod: $paymentMethod, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4942,6 +4993,7 @@ typedef $$OrdersTableCreateCompanionBuilder =
       Value<DateTime?> deliveredDate,
       Value<DateTime?> paidDate,
       Value<String> note,
+      Value<String> paymentMethod,
       Value<int> rowid,
     });
 typedef $$OrdersTableUpdateCompanionBuilder =
@@ -4954,6 +5006,7 @@ typedef $$OrdersTableUpdateCompanionBuilder =
       Value<DateTime?> deliveredDate,
       Value<DateTime?> paidDate,
       Value<String> note,
+      Value<String> paymentMethod,
       Value<int> rowid,
     });
 
@@ -5062,6 +5115,11 @@ class $$OrdersTableFilterComposer
 
   ColumnFilters<String> get note => $composableBuilder(
     column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get paymentMethod => $composableBuilder(
+    column: $table.paymentMethod,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5183,6 +5241,11 @@ class $$OrdersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get paymentMethod => $composableBuilder(
+    column: $table.paymentMethod,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$CustomersTableOrderingComposer get customerId {
     final $$CustomersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -5240,6 +5303,11 @@ class $$OrdersTableAnnotationComposer
 
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get paymentMethod => $composableBuilder(
+    column: $table.paymentMethod,
+    builder: (column) => column,
+  );
 
   $$CustomersTableAnnotationComposer get customerId {
     final $$CustomersTableAnnotationComposer composer = $composerBuilder(
@@ -5356,6 +5424,7 @@ class $$OrdersTableTableManager
                 Value<DateTime?> deliveredDate = const Value.absent(),
                 Value<DateTime?> paidDate = const Value.absent(),
                 Value<String> note = const Value.absent(),
+                Value<String> paymentMethod = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OrdersCompanion(
                 id: id,
@@ -5366,6 +5435,7 @@ class $$OrdersTableTableManager
                 deliveredDate: deliveredDate,
                 paidDate: paidDate,
                 note: note,
+                paymentMethod: paymentMethod,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -5378,6 +5448,7 @@ class $$OrdersTableTableManager
                 Value<DateTime?> deliveredDate = const Value.absent(),
                 Value<DateTime?> paidDate = const Value.absent(),
                 Value<String> note = const Value.absent(),
+                Value<String> paymentMethod = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OrdersCompanion.insert(
                 id: id,
@@ -5388,6 +5459,7 @@ class $$OrdersTableTableManager
                 deliveredDate: deliveredDate,
                 paidDate: paidDate,
                 note: note,
+                paymentMethod: paymentMethod,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

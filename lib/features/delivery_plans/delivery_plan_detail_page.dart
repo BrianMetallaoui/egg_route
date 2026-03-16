@@ -194,26 +194,6 @@ class _DeliveryPlanDetailPageState
     }
   }
 
-  Future<void> _markAllPaid() async {
-    final settings = ref.read(settingsProvider);
-    if (settings.warnOnPlanDeliver) {
-      final confirmed = await _showConfirmDialog(
-        'Mark All Paid',
-        'Mark all orders in this plan as paid?',
-      );
-      if (confirmed != true) return;
-    }
-
-    final allOrders = ref.read(orderProvider);
-    final orderMap = {for (final o in allOrders) o.id: o};
-    for (final li in _localItems) {
-      final order = orderMap[li.orderId];
-      if (order != null && !order.isPaid) {
-        await ref.read(orderProvider.notifier).markPaid(li.orderId, true);
-      }
-    }
-  }
-
   Future<void> _addOrders() async {
     final excludedIds = _localItems.map((li) => li.orderId).toSet();
     final selectedIds = await context.push<List<String>>(
@@ -339,9 +319,6 @@ class _DeliveryPlanDetailPageState
 
     final allDelivered =
         allItems.isNotEmpty && allItems.every((i) => i.order.isDelivered);
-    final allPaid =
-        allItems.isNotEmpty && allItems.every((i) => i.order.isPaid);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Delivery Plan'),
@@ -444,33 +421,19 @@ class _DeliveryPlanDetailPageState
                           ),
 
                           const SizedBox(height: AppConstants.paddingSmall),
-                          // Bulk action buttons
-                          Row(
-                            children: [
-                              Expanded(
-                                child: FilledButton.icon(
-                                  onPressed: allDelivered
-                                      ? null
-                                      : _markAllDelivered,
-                                  icon: const Icon(
-                                    Icons.local_shipping,
-                                    size: 18,
-                                  ),
-                                  label: const Text('All Delivered'),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: FilledButton.icon(
-                                  onPressed: allPaid ? null : _markAllPaid,
-                                  icon: const Icon(
-                                    Icons.attach_money,
-                                    size: 18,
-                                  ),
-                                  label: const Text('All Paid'),
-                                ),
-                              ),
-                            ],
+                          // Bulk action button
+                          FilledButton.icon(
+                            onPressed: allDelivered
+                                ? null
+                                : _markAllDelivered,
+                            icon: const Icon(
+                              Icons.local_shipping,
+                              size: 18,
+                            ),
+                            label: const Text('Mark All Delivered'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 40),
+                            ),
                           ),
                           const SizedBox(height: AppConstants.paddingSmall),
                           const Divider(),
@@ -529,13 +492,6 @@ class _DeliveryPlanDetailPageState
                               ref
                                   .read(orderProvider.notifier)
                                   .markDelivered(order.id, true);
-                            }
-                          },
-                          onMarkPaid: () {
-                            if (!order.isPaid) {
-                              ref
-                                  .read(orderProvider.notifier)
-                                  .markPaid(order.id, true);
                             }
                           },
                           onDelete: () => _deleteOrder(order.id),
@@ -699,7 +655,6 @@ class _PlanOrderTile extends StatefulWidget {
   final dynamic order; // Order type
   final VoidCallback onTap;
   final VoidCallback onMarkDelivered;
-  final VoidCallback onMarkPaid;
   final VoidCallback onDelete;
   final VoidCallback onRemoveFromPlan;
 
@@ -707,7 +662,6 @@ class _PlanOrderTile extends StatefulWidget {
     required this.order,
     required this.onTap,
     required this.onMarkDelivered,
-    required this.onMarkPaid,
     required this.onDelete,
     required this.onRemoveFromPlan,
   });
@@ -721,7 +675,7 @@ class _PlanOrderTileState extends State<_PlanOrderTile>
   double _offset = 0;
   bool _dragging = false;
 
-  static const double _actionWidth = 200;
+  static const double _actionWidth = 140;
   static const double _deleteThreshold = 100;
 
   late final AnimationController _snapController;
@@ -839,19 +793,6 @@ class _PlanOrderTileState extends State<_PlanOrderTile>
                             disabledColor: theme.colorScheme.outline,
                             onTap: () {
                               widget.onMarkDelivered();
-                              _close();
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: _ActionBtn(
-                            icon: Icons.attach_money,
-                            label: 'Paid',
-                            enabled: !order.isPaid,
-                            color: theme.colorScheme.primary,
-                            disabledColor: theme.colorScheme.outline,
-                            onTap: () {
-                              widget.onMarkPaid();
                               _close();
                             },
                           ),

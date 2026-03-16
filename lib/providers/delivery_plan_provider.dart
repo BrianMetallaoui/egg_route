@@ -43,18 +43,6 @@ class DeliveryPlanNotifier extends Notifier<List<DeliveryPlan>>
     });
   }
 
-  /// Mark all orders in a plan as paid.
-  Future<void> markAllPaid(String planId) async {
-    await dbCall((db) async {
-      final plan = await db.deliveryPlanRepo.getById(planId);
-      if (plan == null) return;
-      for (final item in plan.items) {
-        if (!item.order.isPaid) {
-          await db.orderRepo.markPaid(item.orderId, true);
-        }
-      }
-    });
-  }
 }
 
 final deliveryPlanProvider =

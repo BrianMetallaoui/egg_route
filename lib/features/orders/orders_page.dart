@@ -121,7 +121,6 @@ class OrdersPage extends ConsumerWidget {
                       onTap: () => context.push('/order/${order.id}'),
                       onDelete: () => _deleteOrder(context, ref, order),
                       onMarkDelivered: () => _markDelivered(ref, order),
-                      onMarkPaid: () => _markPaid(ref, order),
                     );
                   },
                 ),
@@ -168,11 +167,6 @@ class OrdersPage extends ConsumerWidget {
     await ref.read(orderProvider.notifier).markDelivered(order.id, true);
   }
 
-  Future<void> _markPaid(WidgetRef ref, Order order) async {
-    if (order.isPaid) return;
-    await ref.read(orderProvider.notifier).markPaid(order.id, true);
-  }
-
   String _filterLabel(OrderFilter f) {
     switch (f) {
       case OrderFilter.all:
@@ -200,7 +194,6 @@ class _SwipeableOrderCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback onMarkDelivered;
-  final VoidCallback onMarkPaid;
 
   const _SwipeableOrderCard({
     super.key,
@@ -208,7 +201,6 @@ class _SwipeableOrderCard extends StatefulWidget {
     required this.onTap,
     required this.onDelete,
     required this.onMarkDelivered,
-    required this.onMarkPaid,
   });
 
   @override
@@ -221,7 +213,7 @@ class _SwipeableOrderCardState extends State<_SwipeableOrderCard>
   double _offset = 0;
   bool _dragging = false;
 
-  static const double _actionWidth = 160;
+  static const double _actionWidth = 80;
   static const double _deleteThreshold = 100;
 
   late final AnimationController _snapController;
@@ -332,35 +324,16 @@ class _SwipeableOrderCardState extends State<_SwipeableOrderCard>
                   alignment: Alignment.centerRight,
                   child: SizedBox(
                     width: _actionWidth,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _SwipeActionButton(
-                            icon: Icons.local_shipping,
-                            label: 'Delivered',
-                            enabled: !widget.order.isDelivered,
-                            color: theme.colorScheme.primary,
-                            disabledColor: theme.colorScheme.outline,
-                            onTap: () {
-                              widget.onMarkDelivered();
-                              _close();
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: _SwipeActionButton(
-                            icon: Icons.attach_money,
-                            label: 'Paid',
-                            enabled: !widget.order.isPaid,
-                            color: theme.colorScheme.primary,
-                            disabledColor: theme.colorScheme.outline,
-                            onTap: () {
-                              widget.onMarkPaid();
-                              _close();
-                            },
-                          ),
-                        ),
-                      ],
+                    child: _SwipeActionButton(
+                      icon: Icons.local_shipping,
+                      label: 'Delivered',
+                      enabled: !widget.order.isDelivered,
+                      color: theme.colorScheme.primary,
+                      disabledColor: theme.colorScheme.outline,
+                      onTap: () {
+                        widget.onMarkDelivered();
+                        _close();
+                      },
                     ),
                   ),
                 ),

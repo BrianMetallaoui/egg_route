@@ -72,6 +72,10 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   // Line items
   final List<_LineItemFormData> _lineItems = [];
 
+  // Payment method
+  final _paymentMethodController = TextEditingController();
+  final _paymentMethodKey = GlobalKey();
+
   // Note
   final _noteController = TextEditingController();
 
@@ -80,8 +84,16 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
 
   bool _initialized = false;
 
+  static const _paymentMethodSuggestions = [
+    'PayPal',
+    'Venmo',
+    'CashApp',
+    'Cash',
+  ];
+
   @override
   void dispose() {
+    _paymentMethodController.dispose();
     _noteController.dispose();
     for (final li in _lineItems) {
       li.dispose();
@@ -99,6 +111,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       _paidDate = order.paidDate;
       _originalIsDelivered = order.isDelivered;
       _originalIsPaid = order.isPaid;
+      _paymentMethodController.text = order.paymentMethod;
       _noteController.text = order.note;
       _deliveryPlanRefs = order.deliveryPlanRefs;
 
@@ -179,7 +192,21 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields'),
+        ),
+      );
+      return;
+    }
+
+    if (_isPaid && _paymentMethodController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a payment method')),
+      );
+      return;
+    }
 
     if (_selectedCustomer == null) {
       ScaffoldMessenger.of(
@@ -245,6 +272,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       customer: _selectedCustomer,
       isDelivered: _isDelivered,
       isPaid: _isPaid,
+      paymentMethod: _isPaid ? _paymentMethodController.text.trim() : '',
       orderDate: _orderDate,
       deliveredDate: _deliveredDate,
       paidDate: _paidDate,
@@ -342,9 +370,11 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
               Expanded(
                 child: Form(
                   key: _formKey,
-                  child: ListView(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                    children: [
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                       // --- Customer section ---
                       const Text(
                         'Customer',
@@ -456,6 +486,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                                       _paidDate ??= DateTime.now();
                                     } else {
                                       _paidDate = null;
+                                      _paymentMethodController.clear();
                                     }
                                   });
                                 },
@@ -480,6 +511,75 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                               ),
                           ],
                         ),
+                        if (_isPaid)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              top: AppConstants.paddingSmall,
+                            ),
+                            child: Autocomplete<String>(
+                              optionsBuilder: (textEditingValue) {
+                                if (textEditingValue.text.isEmpty) {
+                                  return _paymentMethodSuggestions;
+                                }
+                                return _paymentMethodSuggestions.where(
+                                  (option) => option.toLowerCase().contains(
+                                    textEditingValue.text.toLowerCase(),
+                                  ),
+                                );
+                              },
+                              initialValue: _paymentMethodController.value,
+                              onSelected: (selection) {
+                                _paymentMethodController.text = selection;
+                              },
+                              fieldViewBuilder: (
+                                context,
+                                controller,
+                                focusNode,
+                                onFieldSubmitted,
+                              ) {
+                                // Sync the external controller with autocomplete's internal one
+                                controller.text = _paymentMethodController.text;
+                                controller.addListener(() {
+                                  _paymentMethodController.text = controller.text;
+                                });
+                                focusNode.addListener(() {
+                                  if (focusNode.hasFocus) {
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      final ctx =
+                                          _paymentMethodKey.currentContext;
+                                      if (ctx != null && mounted) {
+                                        Scrollable.ensureVisible(
+                                          ctx,
+                                          alignment: 0.0,
+                                          duration:
+                                              const Duration(milliseconds: 200),
+                                        );
+                                      }
+                                    });
+                                  }
+                                });
+                                return TextFormField(
+                                  key: _paymentMethodKey,
+                                  controller: controller,
+                                  focusNode: focusNode,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Payment Method',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  validator: (value) {
+                                    if (_isPaid &&
+                                        (value == null || value.trim().isEmpty)) {
+                                      return 'Payment method is required';
+                                    }
+                                    return null;
+                                  },
+                                );
+                              },
+                            ),
+                          ),
                       ],
 
                       // --- Delivery plan refs (edit mode) ---
@@ -650,6 +750,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                       // Extra space so product dropdowns can scroll to the top
                       const SizedBox(height: 300),
                     ],
+                    ),
                   ),
                 ),
               ),

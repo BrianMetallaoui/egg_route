@@ -49,7 +49,14 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields'),
+        ),
+      );
+      return;
+    }
 
     final notifier = ref.read(productProvider.notifier);
     final priceText = _priceController.text.trim();
@@ -136,9 +143,11 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
             Expanded(
               child: Form(
                 key: _formKey,
-                child: ListView(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                  children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     TextFormField(
                       controller: _labelController,
                       decoration: const InputDecoration(
@@ -187,6 +196,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                       onChanged: (value) => setState(() => _isActive = value),
                     ),
                   ],
+                  ),
                 ),
               ),
             ),

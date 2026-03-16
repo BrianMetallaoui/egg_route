@@ -6,6 +6,7 @@ final class Order {
   final Customer? customer;
   final bool isDelivered;
   final bool isPaid;
+  final String paymentMethod;
   final DateTime orderDate;
   final DateTime? deliveredDate;
   final DateTime? paidDate;
@@ -18,6 +19,7 @@ final class Order {
     this.customer,
     this.isDelivered = false,
     this.isPaid = false,
+    this.paymentMethod = '',
     required this.orderDate,
     this.deliveredDate,
     this.paidDate,
@@ -44,6 +46,7 @@ final class Order {
     Customer? Function()? customer,
     bool? isDelivered,
     bool? isPaid,
+    String? paymentMethod,
     DateTime? orderDate,
     DateTime? Function()? deliveredDate,
     DateTime? Function()? paidDate,
@@ -55,6 +58,7 @@ final class Order {
     customer: customer != null ? customer() : this.customer,
     isDelivered: isDelivered ?? this.isDelivered,
     isPaid: isPaid ?? this.isPaid,
+    paymentMethod: paymentMethod ?? this.paymentMethod,
     orderDate: orderDate ?? this.orderDate,
     deliveredDate: deliveredDate != null ? deliveredDate() : this.deliveredDate,
     paidDate: paidDate != null ? paidDate() : this.paidDate,

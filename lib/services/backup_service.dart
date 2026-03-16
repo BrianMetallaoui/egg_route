@@ -301,6 +301,7 @@ class BackupService {
                       : null,
                 ),
                 note: Value(o['note'] as String? ?? ''),
+                paymentMethod: Value(o['paymentMethod'] as String? ?? ''),
               ),
             );
       }
@@ -389,6 +390,7 @@ class BackupService {
     'deliveredDate': o.deliveredDate?.toIso8601String(),
     'paidDate': o.paidDate?.toIso8601String(),
     'note': o.note,
+    'paymentMethod': o.paymentMethod,
   };
 
   Map<String, dynamic> _oliToJson(OrderLineItemRow oli) => {

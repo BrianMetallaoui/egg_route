@@ -78,7 +78,14 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields'),
+        ),
+      );
+      return;
+    }
 
     final notifier = ref.read(customerProvider.notifier);
     String? savedId;
@@ -227,9 +234,11 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
               Expanded(
                 child: Form(
                   key: _formKey,
-                  child: ListView(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                    children: [
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                       TextFormField(
                         controller: _nameController,
                         decoration: const InputDecoration(
@@ -284,6 +293,7 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
                       ],
                       const SizedBox(height: 200),
                     ],
+                    ),
                   ),
                 ),
               ),

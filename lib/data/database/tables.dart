@@ -33,6 +33,7 @@ class Orders extends Table {
   DateTimeColumn get deliveredDate => dateTime().nullable()();
   DateTimeColumn get paidDate => dateTime().nullable()();
   TextColumn get note => text().withDefault(const Constant(''))();
+  TextColumn get paymentMethod => text().withDefault(const Constant(''))();
 
   @override
   Set<Column> get primaryKey => {id};

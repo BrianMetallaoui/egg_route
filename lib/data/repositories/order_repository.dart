@@ -44,6 +44,7 @@ class OrderRepository {
               deliveredDate: Value(order.deliveredDate),
               paidDate: Value(order.paidDate),
               note: Value(order.note),
+              paymentMethod: Value(order.paymentMethod),
             ),
           );
       for (final item in order.lineItems) {
@@ -74,6 +75,7 @@ class OrderRepository {
           deliveredDate: Value(order.deliveredDate),
           paidDate: Value(order.paidDate),
           note: Value(order.note),
+          paymentMethod: Value(order.paymentMethod),
         ),
       );
 
@@ -121,15 +123,6 @@ class OrderRepository {
         deliveredDate: Value(
           isDelivered ? (deliveredDate ?? DateTime.now()) : null,
         ),
-      ),
-    );
-  }
-
-  Future<void> markPaid(String id, bool isPaid, {DateTime? paidDate}) async {
-    await (_db.update(_db.orders)..where((t) => t.id.equals(id))).write(
-      OrdersCompanion(
-        isPaid: Value(isPaid),
-        paidDate: Value(isPaid ? (paidDate ?? DateTime.now()) : null),
       ),
     );
   }
@@ -196,6 +189,7 @@ class OrderRepository {
           : null,
       isDelivered: row.isDelivered,
       isPaid: row.isPaid,
+      paymentMethod: row.paymentMethod,
       orderDate: row.orderDate,
       deliveredDate: row.deliveredDate,
       paidDate: row.paidDate,

@@ -52,9 +52,6 @@ class OrderNotifier extends Notifier<List<Order>> with DbCallMixin {
     );
   }
 
-  Future<void> markPaid(String id, bool isPaid, {DateTime? paidDate}) async {
-    await dbCall((db) => db.orderRepo.markPaid(id, isPaid, paidDate: paidDate));
-  }
 }
 
 final orderProvider = NotifierProvider<OrderNotifier, List<Order>>(
