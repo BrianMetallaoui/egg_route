@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/customer_product_price.dart';
 import '../services/error_log_service.dart';
 import 'database_providers.dart';
+import 'notifier_helpers.dart';
 
 class CustomerProductPriceNotifier
-    extends FamilyNotifier<List<CustomerProductPrice>, String> {
+    extends FamilyNotifier<List<CustomerProductPrice>, String>
+    with FamilyDbCallMixin {
   @override
   List<CustomerProductPrice> build(String arg) {
     final db = ref.watch(databaseProvider);
@@ -21,18 +23,15 @@ class CustomerProductPriceNotifier
   }
 
   Future<void> add(CustomerProductPrice cpp) async {
-    final db = ref.read(databaseProvider);
-    await db.customerProductPriceRepo.insert(cpp);
+    await dbCall((db) => db.customerProductPriceRepo.insert(cpp));
   }
 
   Future<void> update(CustomerProductPrice cpp) async {
-    final db = ref.read(databaseProvider);
-    await db.customerProductPriceRepo.updatePrice(cpp);
+    await dbCall((db) => db.customerProductPriceRepo.updatePrice(cpp));
   }
 
   Future<void> delete(String id) async {
-    final db = ref.read(databaseProvider);
-    await db.customerProductPriceRepo.deletePrice(id);
+    await dbCall((db) => db.customerProductPriceRepo.deletePrice(id));
   }
 }
 

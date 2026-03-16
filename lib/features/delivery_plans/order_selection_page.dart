@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/utils/format_date.dart';
 import '../../core/utils/id_generator.dart';
 import '../../data/models/delivery_plan.dart';
 import '../../data/models/delivery_plan_item.dart';
@@ -17,10 +18,6 @@ class OrderSelectionPage extends ConsumerStatefulWidget {
 
 class _OrderSelectionPageState extends ConsumerState<OrderSelectionPage> {
   final Set<String> _selectedIds = {};
-
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
-  }
 
   Future<void> _createPlan() async {
     if (_selectedIds.isEmpty) return;
@@ -133,7 +130,7 @@ class _OrderSelectionPageState extends ConsumerState<OrderSelectionPage> {
                       ),
                       Row(
                         children: [
-                          Text(_formatDate(order.orderDate)),
+                          Text(formatDate(order.orderDate)),
                           if (hasPlans) ...[
                             const SizedBox(width: 8),
                             Icon(

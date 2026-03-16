@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants.dart';
+import '../../core/utils/format_date.dart';
 import '../../core/utils/id_generator.dart';
 import '../../data/models/customer.dart';
 import '../../data/models/order.dart';
@@ -13,6 +14,7 @@ import '../../providers/customer_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../widgets/confirm_dialog.dart';
 import 'widgets/customer_search.dart';
 import 'widgets/order_bottom_bar.dart';
 import 'widgets/product_line_editor.dart';
@@ -152,10 +154,6 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   double get _orderTotal =>
       _lineItems.fold(0.0, (sum, li) => sum + li.lineTotal);
 
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
-  }
-
   Future<void> _pickDate({
     required DateTime? initialDate,
     required ValueChanged<DateTime> onPicked,
@@ -169,26 +167,6 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     if (picked != null) {
       onPicked(picked);
     }
-  }
-
-  Future<bool?> _showWarningDialog(String title, String message) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _save() async {
@@ -238,19 +216,21 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       final settings = ref.read(settingsProvider);
 
       if (_originalIsDelivered && !_isDelivered && settings.warnOnUndeliver) {
-        final confirmed = await _showWarningDialog(
-          'Un-mark Delivered',
-          'This order was marked as delivered. Are you sure you want to un-mark it?',
+        final confirmed = await showConfirmDialog(
+          context,
+          title: 'Un-mark Delivered',
+          message: 'This order was marked as delivered. Are you sure you want to un-mark it?',
         );
-        if (confirmed != true) return;
+        if (!confirmed || !mounted) return;
       }
 
       if (_originalIsPaid && !_isPaid && settings.warnOnUnpaid) {
-        final confirmed = await _showWarningDialog(
-          'Un-mark Paid',
-          'This order was marked as paid. Are you sure you want to un-mark it?',
+        final confirmed = await showConfirmDialog(
+          context,
+          title: 'Un-mark Paid',
+          message: 'This order was marked as paid. Are you sure you want to un-mark it?',
         );
-        if (confirmed != true) return;
+        if (!confirmed || !mounted) return;
       }
     }
 
@@ -295,11 +275,12 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     final settings = ref.read(settingsProvider);
 
     if (settings.warnOnDelete) {
-      final confirmed = await _showWarningDialog(
-        'Delete Order',
-        'Are you sure you want to delete this order? This cannot be undone.',
+      final confirmed = await showConfirmDialog(
+        context,
+        title: 'Delete Order',
+        message: 'Are you sure you want to delete this order? This cannot be undone.',
       );
-      if (confirmed != true) return;
+      if (!confirmed) return;
     }
 
     await ref.read(orderProvider.notifier).delete(widget.orderId!);
@@ -461,7 +442,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                                 ),
                                 label: Text(
                                   _deliveredDate != null
-                                      ? _formatDate(_deliveredDate!)
+                                      ? formatDate(_deliveredDate!)
                                       : 'Not set',
                                 ),
                                 onPressed: () => _pickDate(
@@ -500,7 +481,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                                 ),
                                 label: Text(
                                   _paidDate != null
-                                      ? _formatDate(_paidDate!)
+                                      ? formatDate(_paidDate!)
                                       : 'Not set',
                                 ),
                                 onPressed: () => _pickDate(
@@ -731,7 +712,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                             ),
                             suffixIcon: Icon(Icons.calendar_today, size: 18),
                           ),
-                          child: Text(_formatDate(_orderDate)),
+                          child: Text(formatDate(_orderDate)),
                         ),
                       ),
                       const SizedBox(height: AppConstants.paddingMedium),

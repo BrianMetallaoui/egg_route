@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/format_date.dart';
 import '../../../data/models/order.dart';
 
 class OrderCard extends StatelessWidget {
@@ -13,10 +14,6 @@ class OrderCard extends StatelessWidget {
     required this.onTap,
     this.showFinishedDates = false,
   });
-
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
-  }
 
   String get _productSummary {
     if (order.lineItems.isEmpty) return 'No products';
@@ -100,14 +97,14 @@ class OrderCard extends StatelessWidget {
                   // Date info
                   if (showFinishedDates && order.finishedDate != null)
                     Text(
-                      'Finished ${_formatDate(order.finishedDate!)}',
+                      'Finished ${formatDate(order.finishedDate!)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     )
                   else
                     Text(
-                      _formatDate(order.orderDate),
+                      formatDate(order.orderDate),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

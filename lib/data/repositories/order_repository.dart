@@ -12,14 +12,14 @@ class OrderRepository {
 
   Future<List<Order>> getAll() async {
     final orderRows = await _db.select(_db.orders).get();
-    return Future.wait(orderRows.map(_buildOrder));
+    return _buildOrders(orderRows);
   }
 
   Stream<List<Order>> watchAll() {
     return _db
         .select(_db.orders)
         .watch()
-        .asyncMap((orderRows) => Future.wait(orderRows.map(_buildOrder)));
+        .asyncMap(_buildOrders);
   }
 
   Future<Order?> getById(String id) async {
@@ -27,7 +27,8 @@ class OrderRepository {
       _db.orders,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return null;
-    return _buildOrder(row);
+    final results = await _buildOrders([row]);
+    return results.first;
   }
 
   Future<void> insert(Order order) async {
@@ -127,17 +128,72 @@ class OrderRepository {
     );
   }
 
-  Future<Order> _buildOrder(OrderRow row) async {
-    final lineItemRows = await (_db.select(
-      _db.orderLineItems,
-    )..where((t) => t.orderId.equals(row.id))).get();
+  /// Batch-builds full [Order] objects from rows, using bulk queries for
+  /// related tables instead of per-order lookups.
+  Future<List<Order>> _buildOrders(List<OrderRow> orderRows) async {
+    if (orderRows.isEmpty) return [];
 
-    final lineItems = await Future.wait(
-      lineItemRows.map((li) async {
-        final productRow = await (_db.select(
-          _db.products,
-        )..where((t) => t.id.equals(li.productId))).getSingleOrNull();
+    final orderIds = orderRows.map((r) => r.id).toSet();
+    final customerIds = orderRows.map((r) => r.customerId).toSet();
 
+    // Batch load all related rows in parallel
+    final results = await Future.wait([
+      (_db.select(_db.orderLineItems)
+            ..where((t) => t.orderId.isIn(orderIds)))
+          .get(),
+      (_db.select(_db.deliveryPlanItems)
+            ..where((t) => t.orderId.isIn(orderIds)))
+          .get(),
+      (_db.select(_db.customers)
+            ..where((t) => t.id.isIn(customerIds)))
+          .get(),
+    ]);
+
+    final allLineItems = results[0] as List<OrderLineItemRow>;
+    final allPlanItems = results[1] as List<DeliveryPlanItemRow>;
+    final allCustomers = results[2] as List<CustomerRow>;
+
+    // Batch load products and plans referenced by the items
+    final productIds = allLineItems.map((li) => li.productId).toSet();
+    final planIds = allPlanItems.map((pi) => pi.deliveryPlanId).toSet();
+
+    final lookups = await Future.wait([
+      productIds.isEmpty
+          ? Future.value(<ProductRow>[])
+          : (_db.select(_db.products)
+                ..where((t) => t.id.isIn(productIds)))
+              .get(),
+      planIds.isEmpty
+          ? Future.value(<DeliveryPlanRow>[])
+          : (_db.select(_db.deliveryPlans)
+                ..where((t) => t.id.isIn(planIds)))
+              .get(),
+    ]);
+
+    final productMap = {
+      for (final p in lookups[0] as List<ProductRow>) p.id: p,
+    };
+    final planMap = {
+      for (final dp in lookups[1] as List<DeliveryPlanRow>) dp.id: dp,
+    };
+    final customerMap = {
+      for (final c in allCustomers) c.id: c,
+    };
+
+    // Group line items and plan items by order id
+    final lineItemsByOrder = <String, List<OrderLineItemRow>>{};
+    for (final li in allLineItems) {
+      lineItemsByOrder.putIfAbsent(li.orderId, () => []).add(li);
+    }
+    final planItemsByOrder = <String, List<DeliveryPlanItemRow>>{};
+    for (final pi in allPlanItems) {
+      planItemsByOrder.putIfAbsent(pi.orderId, () => []).add(pi);
+    }
+
+    // Assemble orders
+    return orderRows.map((row) {
+      final lineItems = (lineItemsByOrder[row.id] ?? []).map((li) {
+        final productRow = productMap[li.productId];
         return OrderLineItem(
           id: li.id,
           orderId: li.orderId,
@@ -153,49 +209,38 @@ class OrderRepository {
           quantity: li.quantity,
           unitPrice: li.unitPrice,
         );
-      }),
-    );
+      }).toList();
 
-    final planItemRows = await (_db.select(
-      _db.deliveryPlanItems,
-    )..where((t) => t.orderId.equals(row.id))).get();
-
-    final planRefs = await Future.wait(
-      planItemRows.map((pi) async {
-        final planRow = await (_db.select(
-          _db.deliveryPlans,
-        )..where((t) => t.id.equals(pi.deliveryPlanId))).getSingleOrNull();
+      final planRefs = (planItemsByOrder[row.id] ?? []).map((pi) {
+        final planRow = planMap[pi.deliveryPlanId];
         return DeliveryPlanRef(
           id: pi.deliveryPlanId,
           name: planRow?.name ?? '',
         );
-      }),
-    );
+      }).toList();
 
-    final customerRow = await (_db.select(
-      _db.customers,
-    )..where((t) => t.id.equals(row.customerId))).getSingleOrNull();
-
-    return Order(
-      id: row.id,
-      customer: customerRow != null
-          ? Customer(
-              id: customerRow.id,
-              name: customerRow.name,
-              address: customerRow.address,
-              notes: customerRow.notes,
-              isActive: customerRow.isActive,
-            )
-          : null,
-      isDelivered: row.isDelivered,
-      isPaid: row.isPaid,
-      paymentMethod: row.paymentMethod,
-      orderDate: row.orderDate,
-      deliveredDate: row.deliveredDate,
-      paidDate: row.paidDate,
-      note: row.note,
-      lineItems: lineItems,
-      deliveryPlanRefs: planRefs,
-    );
+      final customerRow = customerMap[row.customerId];
+      return Order(
+        id: row.id,
+        customer: customerRow != null
+            ? Customer(
+                id: customerRow.id,
+                name: customerRow.name,
+                address: customerRow.address,
+                notes: customerRow.notes,
+                isActive: customerRow.isActive,
+              )
+            : null,
+        isDelivered: row.isDelivered,
+        isPaid: row.isPaid,
+        paymentMethod: row.paymentMethod,
+        orderDate: row.orderDate,
+        deliveredDate: row.deliveredDate,
+        paidDate: row.paidDate,
+        note: row.note,
+        lineItems: lineItems,
+        deliveryPlanRefs: planRefs,
+      );
+    }).toList();
   }
 }

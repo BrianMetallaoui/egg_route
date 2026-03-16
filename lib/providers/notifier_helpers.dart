@@ -15,3 +15,15 @@ mixin DbCallMixin<T> on Notifier<T> {
     }
   }
 }
+
+mixin FamilyDbCallMixin<T, A> on FamilyNotifier<T, A> {
+  Future<R> dbCall<R>(Future<R> Function(AppDatabase db) fn) async {
+    final db = ref.read(databaseProvider);
+    try {
+      return await fn(db);
+    } catch (e, st) {
+      await ErrorLogService.logError(db, e, st);
+      rethrow;
+    }
+  }
+}

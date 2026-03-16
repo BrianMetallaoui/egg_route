@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/utils/format_date.dart';
 import '../../data/models/delivery_plan.dart';
 import '../../providers/delivery_plan_provider.dart';
 
 class DeliveryPlansPage extends ConsumerWidget {
   const DeliveryPlansPage({super.key});
-
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,12 +41,12 @@ class DeliveryPlansPage extends ConsumerWidget {
                 _PlanList(
                   plans: current,
                   emptyMessage: 'No current delivery plans.',
-                  formatDate: _formatDate,
+                  formatDate: formatDate,
                 ),
                 _PlanList(
                   plans: finished,
                   emptyMessage: 'No finished delivery plans.',
-                  formatDate: _formatDate,
+                  formatDate: formatDate,
                 ),
               ],
             ),

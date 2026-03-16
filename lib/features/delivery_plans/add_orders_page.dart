@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/utils/format_date.dart';
 import '../../providers/order_provider.dart';
 
 class AddOrdersPage extends ConsumerStatefulWidget {
@@ -20,10 +21,6 @@ class AddOrdersPage extends ConsumerStatefulWidget {
 
 class _AddOrdersPageState extends ConsumerState<AddOrdersPage> {
   final Set<String> _selectedIds = {};
-
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +86,7 @@ class _AddOrdersPageState extends ConsumerState<AddOrdersPage> {
                     ],
                   ),
                   subtitle: Text(
-                    '${_formatDate(order.orderDate)}  •  ${order.lineItems.map((li) => '${li.productLabel} x ${li.quantity}').join(', ')}',
+                    '${formatDate(order.orderDate)}  •  ${order.lineItems.map((li) => '${li.productLabel} x ${li.quantity}').join(', ')}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

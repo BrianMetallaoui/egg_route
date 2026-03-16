@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants.dart';
+import '../../core/utils/format_date.dart';
 import '../../core/utils/id_generator.dart';
 import '../../data/models/delivery_plan.dart';
 import '../../data/models/delivery_plan_item.dart';
 import '../../providers/delivery_plan_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../widgets/confirm_dialog.dart';
+import '../../widgets/swipeable_card.dart';
 import '../orders/widgets/order_card.dart';
 import 'reorder_orders_page.dart';
 import 'widgets/product_summary.dart';
@@ -76,10 +79,6 @@ class _DeliveryPlanDetailPageState
     _initialized = true;
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
-  }
-
   Future<void> _pickDeliveryDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -129,11 +128,12 @@ class _DeliveryPlanDetailPageState
   }
 
   Future<void> _deletePlan() async {
-    final confirmed = await _showConfirmDialog(
-      'Delete Plan',
-      'Delete this delivery plan? Orders will not be affected.',
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Delete Plan',
+      message: 'Delete this delivery plan? Orders will not be affected.',
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await ref.read(deliveryPlanProvider.notifier).delete(widget.planId);
     if (mounted) context.pop();
   }
@@ -141,11 +141,12 @@ class _DeliveryPlanDetailPageState
   Future<void> _deleteOrder(String orderId) async {
     final settings = ref.read(settingsProvider);
     if (settings.warnOnDelete) {
-      final confirmed = await _showConfirmDialog(
-        'Delete Order',
-        'Are you sure you want to delete this order? This cannot be undone.',
+      final confirmed = await showConfirmDialog(
+        context,
+        title: 'Delete Order',
+        message: 'Are you sure you want to delete this order? This cannot be undone.',
       );
-      if (confirmed != true) return;
+      if (!confirmed) return;
     }
     await ref.read(orderProvider.notifier).delete(orderId);
     setState(() {
@@ -156,11 +157,12 @@ class _DeliveryPlanDetailPageState
   Future<void> _removeFromPlan(String orderId) async {
     final settings = ref.read(settingsProvider);
     if (settings.warnOnPlanRemove) {
-      final confirmed = await _showConfirmDialog(
-        'Remove from Plan',
-        'Remove this order from the delivery plan?',
+      final confirmed = await showConfirmDialog(
+        context,
+        title: 'Remove from Plan',
+        message: 'Remove this order from the delivery plan?',
       );
-      if (confirmed != true) return;
+      if (!confirmed) return;
     }
     setState(() {
       _localItems.removeWhere((li) => li.orderId == orderId);
@@ -177,11 +179,12 @@ class _DeliveryPlanDetailPageState
   Future<void> _markAllDelivered() async {
     final settings = ref.read(settingsProvider);
     if (settings.warnOnPlanDeliver) {
-      final confirmed = await _showConfirmDialog(
-        'Mark All Delivered',
-        'Mark all orders in this plan as delivered?',
+      final confirmed = await showConfirmDialog(
+        context,
+        title: 'Mark All Delivered',
+        message: 'Mark all orders in this plan as delivered?',
       );
-      if (confirmed != true) return;
+      if (!confirmed) return;
     }
 
     final allOrders = ref.read(orderProvider);
@@ -243,26 +246,6 @@ class _DeliveryPlanDetailPageState
             .toList();
       });
     }
-  }
-
-  Future<bool?> _showConfirmDialog(String title, String message) {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -389,7 +372,7 @@ class _DeliveryPlanDetailPageState
                                     ),
                                     child: Text(
                                       _deliveryDate != null
-                                          ? _formatDate(_deliveryDate!)
+                                          ? formatDate(_deliveryDate!)
                                           : 'No date',
                                       style: TextStyle(
                                         color: _deliveryDate != null
@@ -482,20 +465,36 @@ class _DeliveryPlanDetailPageState
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final item = displayItems[index];
                       final order = item.order;
+                      final theme = Theme.of(context);
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: _PlanOrderTile(
-                          order: order,
-                          onTap: () => context.push('/order/${order.id}'),
-                          onMarkDelivered: () {
-                            if (!order.isDelivered) {
-                              ref
-                                  .read(orderProvider.notifier)
-                                  .markDelivered(order.id, true);
-                            }
-                          },
+                        child: SwipeableCard(
+                          key: ValueKey(order.id),
                           onDelete: () => _deleteOrder(order.id),
-                          onRemoveFromPlan: () => _removeFromPlan(order.id),
+                          actions: [
+                            SwipeAction(
+                              icon: Icons.local_shipping,
+                              label: 'Delivered',
+                              enabled: !order.isDelivered,
+                              color: theme.colorScheme.primary,
+                              disabledColor: theme.colorScheme.outline,
+                              onTap: () => ref
+                                  .read(orderProvider.notifier)
+                                  .markDelivered(order.id, true),
+                            ),
+                            SwipeAction(
+                              icon: Icons.remove_circle_outline,
+                              label: 'Remove',
+                              enabled: true,
+                              color: theme.colorScheme.error,
+                              disabledColor: theme.colorScheme.outline,
+                              onTap: () => _removeFromPlan(order.id),
+                            ),
+                          ],
+                          child: OrderCard(
+                            order: order,
+                            onTap: () => context.push('/order/${order.id}'),
+                          ),
                         ),
                       );
                     }, childCount: displayItems.length),
@@ -650,229 +649,3 @@ class _DeliveryPlanDetailPageState
   }
 }
 
-/// Order tile within a delivery plan with swipe actions.
-class _PlanOrderTile extends StatefulWidget {
-  final dynamic order; // Order type
-  final VoidCallback onTap;
-  final VoidCallback onMarkDelivered;
-  final VoidCallback onDelete;
-  final VoidCallback onRemoveFromPlan;
-
-  const _PlanOrderTile({
-    required this.order,
-    required this.onTap,
-    required this.onMarkDelivered,
-    required this.onDelete,
-    required this.onRemoveFromPlan,
-  });
-
-  @override
-  State<_PlanOrderTile> createState() => _PlanOrderTileState();
-}
-
-class _PlanOrderTileState extends State<_PlanOrderTile>
-    with SingleTickerProviderStateMixin {
-  double _offset = 0;
-  bool _dragging = false;
-
-  static const double _actionWidth = 140;
-  static const double _deleteThreshold = 100;
-
-  late final AnimationController _snapController;
-
-  @override
-  void initState() {
-    super.initState();
-    _snapController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
-
-  @override
-  void dispose() {
-    _snapController.dispose();
-    super.dispose();
-  }
-
-  void _animateTo(double target) {
-    final start = _offset;
-    _snapController.reset();
-    _snapController.addListener(() {
-      setState(() {
-        _offset = start + (target - start) * _snapController.value;
-      });
-    });
-    _snapController.forward().then((_) {
-      _snapController.removeListener(() {});
-    });
-  }
-
-  void _onDragStart(DragStartDetails details) {
-    _dragging = true;
-    _snapController.stop();
-  }
-
-  void _onDragUpdate(DragUpdateDetails details) {
-    if (!_dragging) return;
-    setState(() {
-      _offset = (_offset + details.primaryDelta!).clamp(
-        -_actionWidth,
-        _deleteThreshold + 40,
-      );
-    });
-  }
-
-  void _onDragEnd(DragEndDetails details) {
-    if (!_dragging) return;
-    _dragging = false;
-
-    if (_offset > _deleteThreshold) {
-      _animateTo(0);
-      widget.onDelete();
-    } else if (_offset < -_actionWidth * 0.4) {
-      _animateTo(-_actionWidth);
-    } else {
-      _animateTo(0);
-    }
-  }
-
-  void _close() {
-    _animateTo(0);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final order = widget.order;
-    final deleteProgress = (_offset / _deleteThreshold).clamp(0.0, 1.0);
-    final showDelete = _offset > 0;
-    final showActions = _offset < 0;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          children: [
-            if (showDelete)
-              Positioned.fill(
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.only(left: 24),
-                  color: Color.lerp(
-                    theme.colorScheme.errorContainer,
-                    theme.colorScheme.error,
-                    deleteProgress,
-                  ),
-                  child: Icon(
-                    Icons.delete,
-                    color: Color.lerp(
-                      theme.colorScheme.onErrorContainer,
-                      theme.colorScheme.onError,
-                      deleteProgress,
-                    ),
-                    size: 28,
-                  ),
-                ),
-              ),
-            if (showActions)
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: SizedBox(
-                    width: _actionWidth,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _ActionBtn(
-                            icon: Icons.local_shipping,
-                            label: 'Delivered',
-                            enabled: !order.isDelivered,
-                            color: theme.colorScheme.primary,
-                            disabledColor: theme.colorScheme.outline,
-                            onTap: () {
-                              widget.onMarkDelivered();
-                              _close();
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: _ActionBtn(
-                            icon: Icons.remove_circle_outline,
-                            label: 'Remove',
-                            enabled: true,
-                            color: theme.colorScheme.error,
-                            disabledColor: theme.colorScheme.outline,
-                            onTap: () {
-                              widget.onRemoveFromPlan();
-                              _close();
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            Transform.translate(
-              offset: Offset(_offset, 0),
-              child: GestureDetector(
-                onHorizontalDragStart: _onDragStart,
-                onHorizontalDragUpdate: _onDragUpdate,
-                onHorizontalDragEnd: _onDragEnd,
-                child: OrderCard(order: order, onTap: widget.onTap),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool enabled;
-  final Color color;
-  final Color disabledColor;
-  final VoidCallback onTap;
-
-  const _ActionBtn({
-    required this.icon,
-    required this.label,
-    required this.enabled,
-    required this.color,
-    required this.disabledColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveColor = enabled ? color : disabledColor;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: effectiveColor, size: 24),
-              const SizedBox(height: 2),
-              Text(
-                enabled ? label : 'Done',
-                style: TextStyle(
-                  color: effectiveColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

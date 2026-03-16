@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/order.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/order_provider.dart';
+import '../../widgets/confirm_dialog.dart';
 import 'widgets/order_card.dart';
 
 final _groupByMonthProvider = StateProvider<bool>((_) => false);
@@ -33,61 +34,27 @@ class FinishedOrdersPage extends ConsumerWidget {
     return '${_months[date.month]} ${date.year}';
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
-  }
-
   Future<void> _deleteAllFinished(BuildContext context, WidgetRef ref) async {
     final allOrders = ref.read(orderProvider);
     final count = allOrders.where((o) => o.isFinished).length;
 
-    final first = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete All Finished Orders'),
-        content: Text(
-          'This will permanently delete $count finished '
+    final first = await showConfirmDialog(
+      context,
+      title: 'Delete All Finished Orders',
+      message: 'This will permanently delete $count finished '
           '${count == 1 ? 'order' : 'orders'}. This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
     );
-    if (first != true || !context.mounted) return;
+    if (!first || !context.mounted) return;
 
-    final second = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Are you sure?'),
-        content: Text(
-          'Really delete all $count finished '
+    final second = await showConfirmDialog(
+      context,
+      title: 'Are you sure?',
+      message: 'Really delete all $count finished '
           '${count == 1 ? 'order' : 'orders'}? '
           'This is permanent.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete All'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Delete All',
     );
-    if (second != true) return;
+    if (!second) return;
 
     await ref.read(orderProvider.notifier).deleteFinished();
   }
@@ -190,7 +157,6 @@ class FinishedOrdersPage extends ConsumerWidget {
               ? _GroupedList(
                   orders: finished,
                   monthHeader: _monthHeader,
-                  formatDate: _formatDate,
                 )
               : ListView.builder(
                   padding: const EdgeInsets.only(left: 8, right: 8, bottom: 80),
@@ -213,12 +179,10 @@ class FinishedOrdersPage extends ConsumerWidget {
 class _GroupedList extends StatelessWidget {
   final List<Order> orders;
   final String Function(DateTime) monthHeader;
-  final String Function(DateTime) formatDate;
 
   const _GroupedList({
     required this.orders,
     required this.monthHeader,
-    required this.formatDate,
   });
 
   @override
