@@ -1,4 +1,4 @@
-package com.jeehbs.egg_route
+package com.example.egg_route
 
 import io.flutter.embedding.android.FlutterActivity
 
