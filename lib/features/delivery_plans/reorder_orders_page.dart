@@ -51,6 +51,7 @@ class _ReorderOrdersPageState extends ConsumerState<ReorderOrdersPage> {
                 final order = orderMap[entry.orderId];
                 final customerName =
                     order?.customer?.name ?? 'Unknown Customer';
+                final address = order?.customer?.address ?? '';
                 final products =
                     order?.lineItems
                         .map((li) => '${li.productLabel} x ${li.quantity}')
@@ -70,10 +71,25 @@ class _ReorderOrdersPageState extends ConsumerState<ReorderOrdersPage> {
                     customerName,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text(
-                    products,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (address.isNotEmpty)
+                        Text(
+                          address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      if (products.isNotEmpty)
+                        Text(
+                          products,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                        ),
+                    ],
                   ),
                   trailing: Text(
                     '\$${order?.orderTotal.toStringAsFixed(2) ?? '0.00'}',
