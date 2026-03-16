@@ -97,4 +97,3 @@ Dev: `drift_dev`, `build_runner`, `flutter_lints`
 - Finished orders (both delivered AND paid) live on their own dedicated page (`/finished-orders`), not a tab on the main orders page.
 - Orders can belong to multiple delivery plans.
 - "Mark All Delivered" on a delivery plan marks orders as delivered (not paid).
-- Do not refer to the client by name anywhere in code, comments, or docs.
